@@ -5,6 +5,7 @@ Utilities for SuperClaude Multi-Agent Code Review System
 
 from .code_parser import CodeParser, CodeContext, LanguageDetector, SupportedLanguage
 from .output_formatter import OutputManager, InteractiveFormatter, ReportFormatter, JSONFormatter, ReviewSession
+from .interactive_diff_reviewer import InteractiveDiffReviewer, ReviewAction, ReviewDecision, DiffHunk
 
 __all__ = [
     'CodeParser',
@@ -15,5 +16,9 @@ __all__ = [
     'InteractiveFormatter',
     'ReportFormatter', 
     'JSONFormatter',
-    'ReviewSession'
+    'ReviewSession',
+    'InteractiveDiffReviewer',
+    'ReviewAction',
+    'ReviewDecision', 
+    'DiffHunk'
 ]
