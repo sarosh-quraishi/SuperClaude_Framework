@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite]
 description: "Security vulnerability analysis based on OWASP Top 10 and security best practices"
 ---
 
-# /security_review - Security Vulnerability Analysis
+# /sc:security_review - Security Vulnerability Analysis
 
 ## Purpose
 Identify security vulnerabilities and recommend secure coding practices based on OWASP Top 10 and cybersecurity best practices.
 
 ## Usage
 ```
-/security_review [file_path|code_block] [--focus injection|auth|xss|access|crypto] [--severity critical|high|medium] [--owasp]
+/sc:security_review [file_path|code_block] [--focus injection|auth|xss|access|crypto] [--severity critical|high|medium] [--owasp]
 ```
 
 ## Arguments
@@ -182,7 +182,7 @@ After using `/security_review`, developers will understand:
 - **SOX** - Financial reporting security
 
 ## Related Commands
-- `/code_review` - Comprehensive analysis including security
-- `/analyze --focus security` - Deep security architecture analysis
-- `/improve --security` - Security-focused code improvements
-- `/audit` - Comprehensive security audit with compliance checking
+- `/sc:code_review` - Comprehensive analysis including security
+- `/sc:analyze --focus security` - Deep security architecture analysis
+- `/sc:improve --security` - Security-focused code improvements
+- `/sc:audit` - Comprehensive security audit with compliance checking

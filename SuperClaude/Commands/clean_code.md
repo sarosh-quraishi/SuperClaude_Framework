@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite]
 description: "Analyze code using Clean Code principles by Robert C. Martin"
 ---
 
-# /clean_code - Clean Code Analysis
+# /sc:clean_code - Clean Code Analysis
 
 ## Purpose
 Apply Robert C. Martin's Clean Code principles to analyze code for meaningful names, small functions, single responsibility, and readability improvements.
 
 ## Usage
 ```
-/clean_code [file_path|code_block] [--format text|json] [--severity all|high|critical] [--examples]
+/sc:clean_code [file_path|code_block] [--format text|json] [--severity all|high|critical] [--examples]
 ```
 
 ## Arguments
@@ -118,7 +118,7 @@ After using `/clean_code`, developers will understand:
 - How Clean Code principles improve long-term maintainability
 
 ## Related Commands
-- `/code_review` - Comprehensive multi-agent analysis including Clean Code
-- `/improve --quality` - General quality improvements
-- `/refactor` - Systematic code restructuring
-- `/document` - Generate documentation for cleaned code
+- `/sc:code_review` - Comprehensive multi-agent analysis including Clean Code
+- `/sc:improve --quality` - General quality improvements
+- `/sc:refactor` - Systematic code restructuring
+- `/sc:document` - Generate documentation for cleaned code

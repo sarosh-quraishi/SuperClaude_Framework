@@ -20,21 +20,21 @@ The SuperClaude Multi-Agent Code Review System transforms Claude from a code gen
 
 ```bash
 # Comprehensive multi-agent review
-/code_review path/to/your/file.py
+/sc:code_review path/to/your/file.py
 
 # Individual agent analysis
-/clean_code path/to/your/file.py
-/security_review path/to/your/file.py
-/performance_review path/to/your/file.py
-/design_patterns path/to/your/file.py
-/testability path/to/your/file.py
+/sc:clean_code path/to/your/file.py
+/sc:security_review path/to/your/file.py
+/sc:performance_review path/to/your/file.py
+/sc:design_patterns path/to/your/file.py
+/sc:testability path/to/your/file.py
 ```
 
 ### Code Block Analysis
 
 ```bash
 # Analyze inline code
-/code_review
+/sc:code_review
 ```python
 def process_data(data):
     temp = data
@@ -158,12 +158,12 @@ Test results:
 
 ```yaml
 Educational Commands:
-  - /code_review: Comprehensive multi-agent analysis
-  - /clean_code: Clean Code principles
-  - /security_review: Security vulnerability analysis
-  - /performance_review: Performance optimization
-  - /design_patterns: Architecture and patterns
-  - /testability: TDD and testing best practices
+  - /sc:code_review: Comprehensive multi-agent analysis
+  - /sc:clean_code: Clean Code principles
+  - /sc:security_review: Security vulnerability analysis
+  - /sc:performance_review: Performance optimization
+  - /sc:design_patterns: Architecture and patterns
+  - /sc:testability: TDD and testing best practices
 ```
 
 ## 📈 Learning Outcomes

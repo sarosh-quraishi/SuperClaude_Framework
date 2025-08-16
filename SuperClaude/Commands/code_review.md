@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite, Task]
 description: "Comprehensive multi-agent code review with 5 specialized AI agents providing educational feedback"
 ---
 
-# /code_review - Multi-Agent Code Review System
+# /sc:code_review - Multi-Agent Code Review System
 
 ## Purpose
 Execute comprehensive code review using 5 specialized AI agents that provide educational feedback through systematic analysis of Clean Code principles, security vulnerabilities, performance optimizations, design patterns, and testability improvements.
 
 ## Usage
 ```
-/code_review [file_path|code_block] [--agents all|selective] [--format interactive|report|json] [--conflicts] [--learn]
+/sc:code_review [file_path|code_block] [--agents all|selective] [--format interactive|report|json] [--conflicts] [--learn]
 ```
 
 ## Arguments
@@ -303,10 +303,10 @@ When agents provide conflicting advice, the system:
 - **Educational Enhancement**: Improve explanations based on user understanding
 
 ## Related Commands
-- `/clean_code` - Individual Clean Code analysis
-- `/security_review` - Individual security analysis
-- `/performance_review` - Individual performance analysis
-- `/design_patterns` - Individual design pattern analysis
-- `/testability` - Individual testability analysis
-- `/improve --comprehensive` - Apply all accepted suggestions
-- `/learn --code-quality` - Extended educational content on code quality principles
+- `/sc:clean_code` - Individual Clean Code analysis
+- `/sc:security_review` - Individual security analysis
+- `/sc:performance_review` - Individual performance analysis
+- `/sc:design_patterns` - Individual design pattern analysis
+- `/sc:testability` - Individual testability analysis
+- `/sc:improve --comprehensive` - Apply all accepted suggestions
+- `/sc:learn --code-quality` - Extended educational content on code quality principles

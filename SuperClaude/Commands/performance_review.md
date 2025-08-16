@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite, Bash]
 description: "Performance analysis and optimization recommendations for algorithms and efficiency"
 ---
 
-# /performance_review - Performance Analysis & Optimization
+# /sc:performance_review - Performance Analysis & Optimization
 
 ## Purpose
 Identify performance bottlenecks, analyze algorithmic complexity, and recommend optimizations for better speed, memory usage, and scalability.
 
 ## Usage
 ```
-/performance_review [file_path|code_block] [--focus algorithm|memory|io|database] [--scale small|medium|large] [--profile]
+/sc:performance_review [file_path|code_block] [--focus algorithm|memory|io|database] [--scale small|medium|large] [--profile]
 ```
 
 ## Arguments
@@ -242,7 +242,7 @@ After using `/performance_review`, developers will understand:
 - **Scalability**: Performance degradation with increased load
 
 ## Related Commands
-- `/code_review` - Comprehensive analysis including performance
-- `/analyze --focus performance` - Deep performance architecture analysis
-- `/improve --perf` - Performance-focused code improvements
-- `/benchmark` - Automated performance testing and validation
+- `/sc:code_review` - Comprehensive analysis including performance
+- `/sc:analyze --focus performance` - Deep performance architecture analysis
+- `/sc:improve --perf` - Performance-focused code improvements
+- `/sc:benchmark` - Automated performance testing and validation

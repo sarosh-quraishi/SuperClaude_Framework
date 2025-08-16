@@ -11,12 +11,12 @@ This extension provides comprehensive code review through 5 specialized agents:
 - Testability Agent: TDD best practices and test design
 
 Usage:
-    /code_review [file_path] - Comprehensive multi-agent review
-    /clean_code [file_path] - Clean Code analysis only
-    /security_review [file_path] - Security analysis only
-    /performance_review [file_path] - Performance analysis only
-    /design_patterns [file_path] - Design patterns analysis only
-    /testability [file_path] - Testability analysis only
+    /sc:code_review [file_path] - Comprehensive multi-agent review
+    /sc:clean_code [file_path] - Clean Code analysis only
+    /sc:security_review [file_path] - Security analysis only
+    /sc:performance_review [file_path] - Performance analysis only
+    /sc:design_patterns [file_path] - Design patterns analysis only
+    /sc:testability [file_path] - Testability analysis only
 """
 
 from .agents import (
@@ -73,12 +73,12 @@ EXTENSION_INFO = {
     'version': __version__,
     'description': 'Educational AI code review with 5 specialized agents',
     'commands': [
-        'code_review',
-        'clean_code', 
-        'security_review',
-        'performance_review',
-        'design_patterns',
-        'testability'
+        'sc:code_review',
+        'sc:clean_code', 
+        'sc:security_review',
+        'sc:performance_review',
+        'sc:design_patterns',
+        'sc:testability'
     ],
     'agents': list(AVAILABLE_AGENTS.keys()),
     'supported_languages': [lang.value for lang in SupportedLanguage if lang != SupportedLanguage.UNKNOWN],

@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite, Bash]
 description: "Analyze code testability and recommend TDD best practices"
 ---
 
-# /testability - Testability Analysis & TDD Best Practices
+# /sc:testability - Testability Analysis & TDD Best Practices
 
 ## Purpose
 Identify opportunities to improve code testability and recommend testing best practices including Test-Driven Development (TDD), mocking strategies, and test design.
 
 ## Usage
 ```
-/testability [file_path|code_block] [--focus tdd|mocking|coverage|isolation] [--generate-tests] [--tdd-guide]
+/sc:testability [file_path|code_block] [--focus tdd|mocking|coverage|isolation] [--generate-tests] [--tdd-guide]
 ```
 
 ## Arguments
@@ -435,7 +435,7 @@ jobs:
 - **Maintainability**: Test complexity, duplication metrics
 
 ## Related Commands
-- `/code_review` - Comprehensive analysis including testability
-- `/test` - Execute test suites and generate reports
-- `/improve --quality` - Quality improvements including testability
-- `/tdd` - Guided Test-Driven Development workflow
+- `/sc:code_review` - Comprehensive analysis including testability
+- `/sc:test` - Execute test suites and generate reports
+- `/sc:improve --quality` - Quality improvements including testability
+- `/sc:tdd` - Guided Test-Driven Development workflow

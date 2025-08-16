@@ -3,14 +3,14 @@ allowed-tools: [Read, Grep, Glob, Edit, MultiEdit, Write, TodoWrite]
 description: "Analyze code for design pattern opportunities and SOLID principle violations"
 ---
 
-# /design_patterns - Design Patterns & SOLID Principles Analysis
+# /sc:design_patterns - Design Patterns & SOLID Principles Analysis
 
 ## Purpose
 Identify opportunities for design patterns and architectural improvements based on Gang of Four patterns and SOLID principles to improve code structure and maintainability.
 
 ## Usage
 ```
-/design_patterns [file_path|code_block] [--focus solid|creational|structural|behavioral] [--patterns] [--refactor]
+/sc:design_patterns [file_path|code_block] [--focus solid|creational|structural|behavioral] [--patterns] [--refactor]
 ```
 
 ## Arguments
@@ -327,7 +327,7 @@ After using `/design_patterns`, developers will understand:
 - **Replace Conditional with Polymorphism**: Use strategy/state patterns
 
 ## Related Commands
-- `/code_review` - Comprehensive analysis including design patterns
-- `/analyze --focus architecture` - Deep architectural analysis
-- `/improve --arch` - Architecture-focused improvements
-- `/refactor` - Systematic code restructuring with pattern application
+- `/sc:code_review` - Comprehensive analysis including design patterns
+- `/sc:analyze --focus architecture` - Deep architectural analysis
+- `/sc:improve --arch` - Architecture-focused improvements
+- `/sc:refactor` - Systematic code restructuring with pattern application
