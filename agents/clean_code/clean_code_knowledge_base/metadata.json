@@ -1,0 +1,9 @@
+{
+  "pdf_path": "/home/sarosh/Documents/books/CleanCode.pdf",
+  "total_pages": 444,
+  "total_chunks": 454,
+  "chunk_size": 512,
+  "chunk_overlap": 50,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "created_at": "1755420661.063009"
+}

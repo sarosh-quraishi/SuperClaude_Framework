@@ -46,7 +46,32 @@ We focused on 16 essential commands for the most common tasks:
 **Development**: `/sc:implement`, `/sc:build`, `/sc:design`  
 **Analysis**: `/sc:analyze`, `/sc:troubleshoot`, `/sc:explain`  
 **Quality**: `/sc:improve`, `/sc:test`, `/sc:cleanup`  
+**Clean Code**: `/sc:clean_code`, `/sc:clean_code_level_0`, `/sc:clean_code_level_1` ✨ **NEW**  
 **Others**: `/sc:document`, `/sc:git`, `/sc:estimate`, `/sc:task`, `/sc:index`, `/sc:load`, `/sc:spawn`
+
+#### 🆕 Clean Code Analysis Commands
+SuperClaude now includes a **two-pass Clean Code analysis system** based on Robert Martin's principles:
+
+- **`/sc:clean_code`** - Complete two-pass analysis with quick feedback + deep citations
+- **`/sc:clean_code_level_0`** - Quick Crew AI analysis for immediate actionable feedback  
+- **`/sc:clean_code_level_1`** - RAG-powered deep analysis with Clean Code book citations
+
+**Example Usage:**
+```bash
+# Analyze a Python file
+/sc:clean_code src/calculator.py
+
+# Quick analysis only
+/sc:clean_code_level_0 --code "def calc(x,y): return x+y"
+
+# Generate report
+/sc:clean_code my_code.py --output clean_code_report.md
+```
+
+**What You Get:**
+- 🔍 **Level 0**: Fast analysis identifying naming, function size, comment, and formatting issues
+- 📚 **Level 1**: Deep analysis with Clean Code book citations, chapter references, and learning recommendations
+- 📄 **Final Report**: Comprehensive Markdown report with quick wins, detailed explanations, and study roadmap
 
 ### Smart Personas 🎭
 AI specialists that try to jump in when they seem relevant:
