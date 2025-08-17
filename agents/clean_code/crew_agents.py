@@ -215,7 +215,7 @@ class CleanCodeLevel0Agent:
                             "description": f"Variable '{var}' doesn't reveal its intention or purpose",
                             "clean_code_principle": "Use Intention-Revealing Names (Chapter 2)",
                             "recommendation": f"Rename '{var}' to describe what it represents",
-                            "example_fix": f"Replace '{var}' with a meaningful name like 'user_count', 'file_path', etc.",
+                            "example_fix": line.strip().replace(var, f"descriptive_{var}_name"),
                             "impact": "Makes code harder to understand and maintain",
                             "effort_to_fix": "low"
                         })

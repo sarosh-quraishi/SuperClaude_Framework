@@ -67,6 +67,39 @@ class CleanCodePipeline:
         
         return 'unknown'
     
+    def _generate_meaningful_fix(self, line: str, var: str) -> str:
+        """Generate a meaningful variable name suggestion based on context"""
+        line_lower = line.lower()
+        
+        # Context-based suggestions with word boundary protection
+        if 'for' in line_lower and 'range' in line_lower:
+            if 'len(' in line_lower:
+                if 'user' in line_lower or 'data' in line_lower:
+                    new_var = 'item_index'
+                else:
+                    new_var = 'index'
+            else:
+                new_var = 'counter'
+        elif 'user' in line_lower:
+            new_var = 'user_record'
+        elif 'data' in line_lower:
+            new_var = 'processed_data'
+        elif 'file' in line_lower:
+            new_var = 'file_content'
+        elif 'result' in line_lower:
+            new_var = 'calculation_result'
+        elif 'temp' in line_lower:
+            new_var = 'temporary_value'
+        elif '+' in line or '*' in line or '/' in line:
+            new_var = 'calculated_value'
+        else:
+            new_var = f'meaningful_{var}_name'
+        
+        # Replace only whole word occurrences to avoid partial replacements
+        import re
+        pattern = r'\b' + re.escape(var) + r'\b'
+        return re.sub(pattern, new_var, line)
+    
     async def run_level_0_analysis(self, code: str, language: str) -> Dict[str, Any]:
         """Run Level 0 quick analysis using Crew AI agent"""
         print("🔍 Running Level 0 Analysis (Quick Clean Code Review)...")
@@ -104,22 +137,24 @@ class CleanCodePipeline:
         
         # Check for short variable names
         for i, line in enumerate(lines, 1):
-            if any(f' {var} ' in line or f' {var}=' in line for var in ['x', 'y', 'a', 'b', 'i', 'j'] if len(var) == 1):
-                issues.append({
-                    "id": f"CC{issue_id:03d}",
-                    "category": "naming",
-                    "severity": "medium",
-                    "line_number": i,
-                    "code_snippet": line.strip(),
-                    "issue_title": "Non-descriptive variable names",
-                    "description": "Single-letter variable names don't reveal intention",
-                    "clean_code_principle": "Use Intention-Revealing Names (Chapter 2)",
-                    "recommendation": "Use descriptive names that explain the variable's purpose",
-                    "example_fix": line.replace(' x ', ' first_number ').replace(' y ', ' second_number '),
-                    "impact": "Reduces code readability and makes maintenance harder",
-                    "effort_to_fix": "low"
-                })
-                issue_id += 1
+            for var in ['x', 'y', 'a', 'b', 'i', 'j']:
+                if f' {var} ' in line or f' {var}=' in line:
+                    issues.append({
+                        "id": f"CC{issue_id:03d}",
+                        "category": "naming",
+                        "severity": "medium",
+                        "line_number": i,
+                        "code_snippet": line.strip(),
+                        "issue_title": "Non-descriptive variable names",
+                        "description": f"Variable '{var}' doesn't reveal intention",
+                        "clean_code_principle": "Use Intention-Revealing Names (Chapter 2)",
+                        "recommendation": f"Rename '{var}' to describe what it represents",
+                        "example_fix": self._generate_meaningful_fix(line, var),
+                        "impact": "Reduces code readability and makes maintenance harder",
+                        "effort_to_fix": "low"
+                    })
+                    issue_id += 1
+                    break  # Only flag one variable per line
         
         # Check for function length (simple heuristic)
         function_lines = 0
