@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
 import re
+import json
+import os
+from datetime import datetime, timedelta
 
 from ..agents import CodeSuggestion, AgentResult, SeverityLevel
 
@@ -71,6 +74,22 @@ class Synergy:
 
 
 @dataclass
+class StrategyEffectiveness:
+    """Track effectiveness of resolution strategies"""
+    strategy: ResolutionStrategy
+    total_uses: int = 0
+    successful_resolutions: int = 0
+    user_acceptance_rate: float = 0.0
+    avg_user_rating: float = 0.0
+    last_updated: datetime = field(default_factory=datetime.now)
+    
+    @property
+    def success_rate(self) -> float:
+        """Calculate success rate"""
+        return self.successful_resolutions / max(1, self.total_uses)
+
+
+@dataclass
 class CollaborationReport:
     """Report of agent collaboration analysis"""
     total_suggestions: int
@@ -79,6 +98,7 @@ class CollaborationReport:
     priority_matrix: Dict[str, float]
     recommended_focus_areas: List[str]
     overall_collaboration_score: float
+    strategy_recommendations: Optional[Dict[str, Any]] = None
 
 
 class CrossAgentCollaborationEngine:
@@ -96,6 +116,10 @@ class CrossAgentCollaborationEngine:
             "Design Patterns Agent": 50,
             "Testability Agent": 40
         }
+        
+        # Machine learning for strategy selection
+        self.strategy_effectiveness = self._load_strategy_effectiveness()
+        self.learning_data_path = os.path.expanduser("~/.superclaude/strategy_learning.json")
     
     def analyze_collaboration(self, agent_results: List[AgentResult]) -> CollaborationReport:
         """Analyze how agent suggestions interact and collaborate"""
@@ -367,22 +391,70 @@ class CrossAgentCollaborationEngine:
         return resolved
     
     def _choose_resolution_strategy(self, conflict: Conflict) -> ResolutionStrategy:
-        """Choose the best resolution strategy for a conflict"""
+        """Choose the best resolution strategy using machine learning"""
         
+        # Machine learning enhancement: use historical effectiveness data
+        suitable_strategies = self._get_suitable_strategies_for_conflict(conflict)
+        
+        # Find the most effective strategy from suitable ones
+        best_strategy = None
+        best_score = 0.0
+        
+        for strategy in suitable_strategies:
+            if strategy in self.strategy_effectiveness:
+                effectiveness = self.strategy_effectiveness[strategy]
+                # Calculate composite score: success_rate * acceptance_rate * recency_factor
+                recency_factor = self._calculate_recency_factor(effectiveness.last_updated)
+                score = (effectiveness.success_rate * 0.4 + 
+                        effectiveness.user_acceptance_rate * 0.4 + 
+                        recency_factor * 0.2)
+                
+                if score > best_score and effectiveness.total_uses >= 3:  # Minimum data threshold
+                    best_score = score
+                    best_strategy = strategy
+        
+        # Fallback to rule-based selection if no ML data available
+        if best_strategy is None:
+            best_strategy = self._fallback_strategy_selection(conflict)
+        
+        # Log strategy selection reasoning
+        self.logger.debug(f"Selected strategy {best_strategy} for conflict {conflict.conflict_id} "
+                         f"(ML score: {best_score:.2f})")
+        
+        return best_strategy
+    
+    def _get_suitable_strategies_for_conflict(self, conflict: Conflict) -> List[ResolutionStrategy]:
+        """Get strategies suitable for this type of conflict"""
+        if conflict.conflict_type == ConflictType.PHILOSOPHICAL:
+            return [ResolutionStrategy.CONTEXT_DRIVEN, ResolutionStrategy.USER_CHOICE, 
+                   ResolutionStrategy.SYNTHESIS]
+        elif conflict.conflict_type == ConflictType.CONTRADICTORY:
+            return [ResolutionStrategy.IMPACT_WEIGHTED, ResolutionStrategy.AGENT_HIERARCHY,
+                   ResolutionStrategy.USER_CHOICE]
+        elif conflict.conflict_type == ConflictType.OVERLAPPING:
+            return [ResolutionStrategy.SYNTHESIS, ResolutionStrategy.IMPACT_WEIGHTED]
+        else:
+            return [ResolutionStrategy.AGENT_HIERARCHY, ResolutionStrategy.CONTEXT_DRIVEN]
+    
+    def _fallback_strategy_selection(self, conflict: Conflict) -> ResolutionStrategy:
+        """Fallback rule-based strategy selection"""
         if conflict.conflict_type == ConflictType.PHILOSOPHICAL:
             if self.project_context.priority != "balanced":
                 return ResolutionStrategy.CONTEXT_DRIVEN
             else:
                 return ResolutionStrategy.USER_CHOICE
-        
         elif conflict.conflict_type == ConflictType.CONTRADICTORY:
             return ResolutionStrategy.IMPACT_WEIGHTED
-        
         elif conflict.conflict_type == ConflictType.OVERLAPPING:
             return ResolutionStrategy.SYNTHESIS
-        
         else:
             return ResolutionStrategy.AGENT_HIERARCHY
+    
+    def _calculate_recency_factor(self, last_updated: datetime) -> float:
+        """Calculate recency factor (more recent = higher value)"""
+        days_old = (datetime.now() - last_updated).days
+        # Exponential decay: newer data is more relevant
+        return max(0.1, 1.0 / (1.0 + days_old * 0.1))
     
     def _resolve_by_context(self, conflict: Conflict) -> Conflict:
         """Resolve conflict based on project context"""
@@ -554,6 +626,103 @@ class CrossAgentCollaborationEngine:
         
         # Ensure score is within valid range
         return max(0.0, min(100.0, score))
+    
+    def _load_strategy_effectiveness(self) -> Dict[ResolutionStrategy, StrategyEffectiveness]:
+        """Load strategy effectiveness data from disk"""
+        try:
+            os.makedirs(os.path.dirname(self.learning_data_path), exist_ok=True)
+            
+            if os.path.exists(self.learning_data_path):
+                with open(self.learning_data_path, 'r') as f:
+                    data = json.load(f)
+                
+                effectiveness = {}
+                for strategy_name, strategy_data in data.items():
+                    try:
+                        strategy = ResolutionStrategy(strategy_name)
+                        effectiveness[strategy] = StrategyEffectiveness(
+                            strategy=strategy,
+                            total_uses=strategy_data.get('total_uses', 0),
+                            successful_resolutions=strategy_data.get('successful_resolutions', 0),
+                            user_acceptance_rate=strategy_data.get('user_acceptance_rate', 0.0),
+                            avg_user_rating=strategy_data.get('avg_user_rating', 0.0),
+                            last_updated=datetime.fromisoformat(strategy_data.get('last_updated', datetime.now().isoformat()))
+                        )
+                    except (ValueError, KeyError) as e:
+                        self.logger.warning(f"Skipping invalid strategy data for {strategy_name}: {e}")
+                
+                return effectiveness
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to load strategy effectiveness data: {e}")
+        
+        # Return default effectiveness data
+        return {
+            strategy: StrategyEffectiveness(strategy=strategy)
+            for strategy in ResolutionStrategy
+        }
+    
+    def _save_strategy_effectiveness(self):
+        """Save strategy effectiveness data to disk"""
+        try:
+            os.makedirs(os.path.dirname(self.learning_data_path), exist_ok=True)
+            
+            data = {}
+            for strategy, effectiveness in self.strategy_effectiveness.items():
+                data[strategy.value] = {
+                    'total_uses': effectiveness.total_uses,
+                    'successful_resolutions': effectiveness.successful_resolutions,
+                    'user_acceptance_rate': effectiveness.user_acceptance_rate,
+                    'avg_user_rating': effectiveness.avg_user_rating,
+                    'last_updated': effectiveness.last_updated.isoformat()
+                }
+            
+            with open(self.learning_data_path, 'w') as f:
+                json.dump(data, f, indent=2)
+                
+        except Exception as e:
+            self.logger.error(f"Failed to save strategy effectiveness data: {e}")
+    
+    def record_strategy_feedback(self, conflict_id: str, strategy: ResolutionStrategy, 
+                               success: bool, user_rating: Optional[float] = None):
+        """Record feedback on strategy effectiveness"""
+        if strategy not in self.strategy_effectiveness:
+            self.strategy_effectiveness[strategy] = StrategyEffectiveness(strategy=strategy)
+        
+        effectiveness = self.strategy_effectiveness[strategy]
+        effectiveness.total_uses += 1
+        effectiveness.last_updated = datetime.now()
+        
+        if success:
+            effectiveness.successful_resolutions += 1
+        
+        # Update user acceptance rate (rolling average)
+        if effectiveness.total_uses == 1:
+            effectiveness.user_acceptance_rate = 1.0 if success else 0.0
+        else:
+            weight = 1.0 / effectiveness.total_uses
+            effectiveness.user_acceptance_rate = (
+                (1 - weight) * effectiveness.user_acceptance_rate + 
+                weight * (1.0 if success else 0.0)
+            )
+        
+        # Update user rating (rolling average)
+        if user_rating is not None:
+            if effectiveness.total_uses == 1:
+                effectiveness.avg_user_rating = user_rating
+            else:
+                weight = 1.0 / effectiveness.total_uses
+                effectiveness.avg_user_rating = (
+                    (1 - weight) * effectiveness.avg_user_rating + 
+                    weight * user_rating
+                )
+        
+        # Save updated data
+        self._save_strategy_effectiveness()
+        
+        self.logger.info(f"Recorded feedback for strategy {strategy.value}: "
+                        f"success={success}, rating={user_rating}, "
+                        f"new success_rate={effectiveness.success_rate:.2f}")
 
 
 def create_default_project_context() -> ProjectContext:

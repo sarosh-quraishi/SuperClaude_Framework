@@ -83,6 +83,18 @@ class InteractiveConfig:
 
 
 @dataclass
+class LanguageConfig:
+    """Language-specific configuration"""
+    style_guide: str
+    complexity_threshold: int
+    line_length: int
+    naming_convention: str
+    security_patterns: List[str] = field(default_factory=list)
+    performance_patterns: List[str] = field(default_factory=list)
+    common_anti_patterns: List[str] = field(default_factory=list)
+
+
+@dataclass
 class AgentConfig:
     """Configuration for individual agents"""
     enabled_agents: List[str] = field(default_factory=lambda: [
@@ -102,6 +114,90 @@ class AgentConfig:
     min_confidence_threshold: float = 0.5
     min_impact_threshold: float = 3.0
     enable_fallback_analysis: bool = True
+    
+    # Multi-language support
+    language_configs: Dict[str, LanguageConfig] = field(default_factory=lambda: {
+        "python": LanguageConfig(
+            style_guide="PEP 8",
+            complexity_threshold=10,
+            line_length=88,
+            naming_convention="snake_case",
+            security_patterns=["sql_injection", "command_injection", "path_traversal", "xss"],
+            performance_patterns=["list_comprehension", "generator", "caching", "lazy_loading"],
+            common_anti_patterns=["god_class", "long_method", "duplicate_code", "magic_numbers"]
+        ),
+        "javascript": LanguageConfig(
+            style_guide="Airbnb",
+            complexity_threshold=15,
+            line_length=100,
+            naming_convention="camelCase",
+            security_patterns=["xss", "prototype_pollution", "eval_injection", "regex_dos"],
+            performance_patterns=["debouncing", "memoization", "lazy_loading", "tree_shaking"],
+            common_anti_patterns=["callback_hell", "global_variables", "implicit_globals", "blocking_operations"]
+        ),
+        "typescript": LanguageConfig(
+            style_guide="Microsoft TypeScript",
+            complexity_threshold=12,
+            line_length=120,
+            naming_convention="camelCase",
+            security_patterns=["type_confusion", "any_abuse", "unsafe_casting", "xss"],
+            performance_patterns=["type_guards", "const_assertions", "tree_shaking", "lazy_loading"],
+            common_anti_patterns=["any_type_overuse", "non_null_assertion", "type_assertion_abuse"]
+        ),
+        "java": LanguageConfig(
+            style_guide="Google Java Style",
+            complexity_threshold=12,
+            line_length=120,
+            naming_convention="camelCase",
+            security_patterns=["deserialization", "injection", "xxe", "path_traversal"],
+            performance_patterns=["streams", "collections", "caching", "lazy_initialization"],
+            common_anti_patterns=["god_class", "singleton_abuse", "primitive_obsession", "anemic_model"]
+        ),
+        "go": LanguageConfig(
+            style_guide="Effective Go",
+            complexity_threshold=10,
+            line_length=100,
+            naming_convention="mixedCaps",
+            security_patterns=["sql_injection", "command_injection", "path_traversal", "race_conditions"],
+            performance_patterns=["goroutines", "channels", "sync_pool", "buffer_reuse"],
+            common_anti_patterns=["goroutine_leaks", "channel_blocking", "interface_pollution"]
+        ),
+        "rust": LanguageConfig(
+            style_guide="Rust Style Guide",
+            complexity_threshold=8,
+            line_length=100,
+            naming_convention="snake_case",
+            security_patterns=["unsafe_usage", "memory_safety", "integer_overflow", "race_conditions"],
+            performance_patterns=["zero_copy", "iterator_chains", "cow", "arena_allocation"],
+            common_anti_patterns=["clone_abuse", "unwrap_abuse", "string_allocation", "box_everything"]
+        ),
+        "csharp": LanguageConfig(
+            style_guide="Microsoft C# Conventions",
+            complexity_threshold=12,
+            line_length=120,
+            naming_convention="PascalCase",
+            security_patterns=["deserialization", "sql_injection", "ldap_injection", "xml_injection"],
+            performance_patterns=["linq", "async_await", "value_types", "object_pooling"],
+            common_anti_patterns=["exception_handling_abuse", "async_void", "dispose_pattern_violation"]
+        ),
+        "cpp": LanguageConfig(
+            style_guide="Google C++ Style",
+            complexity_threshold=15,
+            line_length=80,
+            naming_convention="snake_case",
+            security_patterns=["buffer_overflow", "use_after_free", "double_free", "integer_overflow"],
+            performance_patterns=["move_semantics", "raii", "zero_cost_abstractions", "template_metaprogramming"],
+            common_anti_patterns=["manual_memory_management", "raw_pointers", "global_state", "deep_inheritance"]
+        )
+    })
+    
+    def get_language_config(self, language: str) -> Optional[LanguageConfig]:
+        """Get configuration for a specific language"""
+        return self.language_configs.get(language.lower())
+    
+    def add_language_config(self, language: str, config: LanguageConfig):
+        """Add or update language configuration"""
+        self.language_configs[language.lower()] = config
 
 
 @dataclass
@@ -117,6 +213,11 @@ class CodeReviewConfig:
     enable_logging: bool = True
     log_level: str = "INFO"
     output_format: str = "interactive"  # interactive, report, json
+    
+    # Cost management
+    enable_cost_tracking: bool = True
+    monthly_budget_limit: float = 100.0  # USD
+    cost_alert_threshold: float = 0.8  # Alert at 80% of budget
     
     def __post_init__(self):
         # Validate log level
@@ -250,6 +351,63 @@ class ConfigManager:
             issues.append("Impact threshold must be between 1.0 and 10.0")
         
         return issues
+    
+    def estimate_monthly_cost(self, config: CodeReviewConfig) -> Dict[str, Any]:
+        """Estimate monthly costs based on configuration and usage patterns"""
+        # Claude API pricing (approximate as of 2024)
+        pricing = {
+            "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},  # per 1K tokens
+            "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
+            "claude-3-opus-20240229": {"input": 0.015, "output": 0.075}
+        }
+        
+        model_pricing = pricing.get(config.claude_api.model, pricing["claude-3-5-sonnet-20241022"])
+        
+        # Estimate usage patterns
+        avg_input_tokens = 2000  # Typical code analysis prompt
+        avg_output_tokens = config.claude_api.max_tokens * 0.7
+        
+        # Calculate requests based on team and project characteristics
+        base_requests_per_person_per_day = 10
+        
+        # Adjust based on project characteristics
+        multiplier = 1.0
+        if config.project.development_phase == "production":
+            multiplier *= 1.5  # More thorough reviews
+        if config.project.security_sensitive:
+            multiplier *= 1.3  # More security analysis
+        if config.project.performance_critical:
+            multiplier *= 1.2  # More performance analysis
+        if config.project.technical_debt_level == "high":
+            multiplier *= 1.4  # More cleanup needed
+        
+        requests_per_day = config.project.team_size * base_requests_per_person_per_day * multiplier
+        requests_per_month = requests_per_day * 22  # 22 working days
+        
+        # Calculate costs
+        input_cost_per_month = (requests_per_month * avg_input_tokens / 1000) * model_pricing["input"]
+        output_cost_per_month = (requests_per_month * avg_output_tokens / 1000) * model_pricing["output"]
+        total_cost_per_month = input_cost_per_month + output_cost_per_month
+        
+        # Budget analysis
+        budget_utilization = (total_cost_per_month / config.monthly_budget_limit) if config.monthly_budget_limit > 0 else 0
+        
+        return {
+            "estimated_monthly_cost": round(total_cost_per_month, 2),
+            "input_cost": round(input_cost_per_month, 2),
+            "output_cost": round(output_cost_per_month, 2),
+            "requests_per_month": int(requests_per_month),
+            "requests_per_day": round(requests_per_day, 1),
+            "total_tokens_per_month": int(requests_per_month * (avg_input_tokens + avg_output_tokens)),
+            "cost_per_request": round(total_cost_per_month / requests_per_month, 4),
+            "budget_limit": config.monthly_budget_limit,
+            "budget_utilization": round(budget_utilization, 2),
+            "budget_status": "over_budget" if budget_utilization > 1.0 else 
+                           "warning" if budget_utilization > config.cost_alert_threshold else "ok",
+            "model": config.claude_api.model,
+            "team_size": config.project.team_size,
+            "usage_multiplier": round(multiplier, 2)
+        }
 
 
 def setup_logging(config: CodeReviewConfig) -> None:

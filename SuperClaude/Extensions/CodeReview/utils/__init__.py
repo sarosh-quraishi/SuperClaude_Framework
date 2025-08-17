@@ -17,11 +17,20 @@ except ImportError:
 try:
     from .collaboration_engine import (
         CrossAgentCollaborationEngine, ProjectContext, Conflict, Synergy, 
-        CollaborationReport, ConflictType, ResolutionStrategy
+        CollaborationReport, ConflictType, ResolutionStrategy, StrategyEffectiveness
     )
     COLLABORATION_ENGINE_AVAILABLE = True
 except ImportError:
     COLLABORATION_ENGINE_AVAILABLE = False
+
+try:
+    from .continuous_learning import (
+        ContinuousLearningEngine, SuggestionFeedback, AgentPerformanceMetrics, 
+        PrincipleEffectiveness, create_learning_engine
+    )
+    CONTINUOUS_LEARNING_AVAILABLE = True
+except ImportError:
+    CONTINUOUS_LEARNING_AVAILABLE = False
 
 __all__ = [
     'CodeParser',
@@ -56,5 +65,15 @@ if COLLABORATION_ENGINE_AVAILABLE:
         'Synergy',
         'CollaborationReport',
         'ConflictType',
-        'ResolutionStrategy'
+        'ResolutionStrategy',
+        'StrategyEffectiveness'
+    ])
+
+if CONTINUOUS_LEARNING_AVAILABLE:
+    __all__.extend([
+        'ContinuousLearningEngine',
+        'SuggestionFeedback',
+        'AgentPerformanceMetrics',
+        'PrincipleEffectiveness',
+        'create_learning_engine'
     ])
