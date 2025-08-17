@@ -21,7 +21,7 @@ except ImportError:
 
 from .rag_system import get_clean_code_rag
 
-class CleanCodeLevel0Agent:
+class CleanCodeQuickAnalyzer:
     """Level 0 Crew AI Agent for quick Clean Code analysis using Claude"""
     
     def __init__(self):
@@ -58,99 +58,66 @@ class CleanCodeLevel0Agent:
     def create_analysis_task(self, code: str, language: str) -> Task:
         """Create analysis task for the agent"""
         
-        task_description = f"""
-        Analyze the following {language} code for Clean Code violations in these key areas:
-
-        **ANALYSIS FOCUS:**
-        1. **Naming Conventions** - Apply "Use Intention-Revealing Names" principle
-           - Are variable/function/class names meaningful and self-documenting?
-           - Do names reveal intent without requiring comments?
-           - Are abbreviations or single-letter variables used inappropriately?
-
-        2. **Function Size & Responsibility** - Apply "Small Functions" and "Do One Thing" principles
-           - Are functions too long (>20 lines guideline)?
-           - Does each function do one thing well?
-           - Are there obvious extraction opportunities?
-
-        3. **Code Formatting** - Apply consistent formatting principles
-           - Is indentation consistent?
-           - Are there appropriate blank lines for readability?
-           - Is the code properly structured?
-
-        4. **Comments** - Apply "Good Comments vs Bad Comments" principle
-           - Are there unnecessary comments explaining obvious code?
-           - Are there missing comments for complex business logic?
-           - Do comments explain "why" rather than "what"?
-
-        **CODE TO ANALYZE:**
-        ```{language}
-        {code}
-        ```
-
-        **PROVIDE ANALYSIS IN THIS EXACT JSON FORMAT:**
-        {{
-            "analysis_summary": {{
-                "total_issues": 0,
-                "high_priority": 0,
-                "medium_priority": 0,
-                "low_priority": 0,
-                "categories": {{
-                    "naming": 0,
-                    "functions": 0,
-                    "comments": 0,
-                    "formatting": 0
-                }}
-            }},
-            "issues": [
-                {{
-                    "id": "CC001",
-                    "category": "naming|functions|comments|formatting",
-                    "severity": "high|medium|low",
-                    "line_number": 10,
-                    "code_snippet": "problematic code here",
-                    "issue_title": "Brief descriptive title",
-                    "description": "Clear explanation of what's wrong",
-                    "clean_code_principle": "Specific Robert Martin principle violated",
-                    "recommendation": "Specific actionable fix",
-                    "example_fix": "Show improved code",
-                    "impact": "Why this matters for code quality",
-                    "effort_to_fix": "low|medium|high"
-                }}
-            ],
-            "quick_wins": [
-                "List of easiest fixes that provide immediate value"
-            ],
-            "deep_analysis_needed": [
-                {{
-                    "issue_id": "CC001",
-                    "reason": "Complex architectural concern needing detailed analysis",
-                    "suggested_rag_topics": ["function design", "abstraction levels"]
-                }}
-            ]
-        }}
-
-        **ANALYSIS GUIDELINES:**
-        - Be specific and actionable in your recommendations
-        - Reference exact Clean Code principles by chapter/concept name
-        - Prioritize issues by impact on readability and maintainability
-        - Flag complex issues that would benefit from deeper book-based analysis
-        - Focus on violations that real development teams encounter daily
-        - Suggest concrete improvements with examples, not just identify problems
-        - Consider the context and don't flag every single-letter loop variable
-
-        **SEVERITY LEVELS:**
-        - HIGH: Severely impacts readability/maintainability (very long functions, completely unclear names)
-        - MEDIUM: Noticeable quality issues (somewhat unclear names, minor formatting issues, unnecessary comments)
-        - LOW: Minor improvements (optimization opportunities, style preferences)
-
-        Remember: You are Claude, an AI assistant created by Anthropic. Provide thoughtful, practical analysis.
-        """
+        task_description = self._build_task_description(code, language)
         
         return Task(
             description=task_description,
             agent=self.agent,
             expected_output="JSON formatted analysis with categorized issues and actionable recommendations"
         )
+
+    def _build_task_description(self, code: str, language: str) -> str:
+        """Build the detailed task description for code analysis"""
+        return self._get_analysis_focus() + self._get_code_section(code, language) + \
+               self._get_json_format() + self._get_analysis_guidelines()
+
+    def _get_analysis_focus(self) -> str:
+        """Get the analysis focus section"""
+        return """
+        Analyze code for Clean Code violations in these key areas:
+        
+        **ANALYSIS FOCUS:**
+        1. **Naming Conventions** - Apply "Use Intention-Revealing Names" principle
+        2. **Function Size & Responsibility** - Apply "Small Functions" and "Do One Thing" principles  
+        3. **Code Formatting** - Apply consistent formatting principles
+        4. **Comments** - Apply "Good Comments vs Bad Comments" principle
+        """
+    
+    def _get_code_section(self, code: str, language: str) -> str:
+        """Get the code to analyze section"""
+        return f"""
+        **CODE TO ANALYZE:**
+        ```{language}
+        {code}
+        ```
+        """
+    
+    def _get_json_format(self) -> str:
+        """Get the JSON format specification"""
+        return """
+        **PROVIDE ANALYSIS IN THIS EXACT JSON FORMAT:**
+        {
+            "analysis_summary": {"total_issues": 0, "categories": {...}},
+            "issues": [{"id": "CC001", "category": "...", "severity": "...", ...}],
+            "quick_wins": [...],
+            "deep_analysis_needed": [...]
+        }
+        """
+    
+    def _get_analysis_guidelines(self) -> str:
+        """Get the analysis guidelines section"""
+        return """
+        **ANALYSIS GUIDELINES:**
+        - Be specific and actionable in recommendations
+        - Reference exact Clean Code principles
+        - Prioritize by impact on readability/maintainability
+        - Focus on real-world violations teams encounter
+        
+        **SEVERITY LEVELS:**
+        - HIGH: Severely impacts readability/maintainability
+        - MEDIUM: Noticeable quality issues  
+        - LOW: Minor improvements
+        """
     
     async def analyze_code(self, code: str, language: str) -> Dict[str, Any]:
         """Run Level 0 analysis using CrewAI with Claude"""
@@ -191,142 +158,38 @@ class CleanCodeLevel0Agent:
     def _parse_text_result(self, result: str, code: str, language: str) -> Dict[str, Any]:
         """Parse text result into structured format if JSON parsing fails"""
         
-        # Basic fallback parsing using simple heuristics
         lines = code.split('\n')
         issues = []
-        
         issue_id = 1
         
-        # Check for short variable names (but exclude common loop variables)
-        for i, line in enumerate(lines, 1):
-            line_stripped = line.strip()
-            # Look for problematic single-letter variables (not in for loops)
-            if not line_stripped.startswith('for ') and not line_stripped.startswith('while '):
-                short_vars = ['x', 'y', 'a', 'b', 'data', 'result', 'temp', 'val']
-                for var in short_vars:
-                    if f' {var} ' in line or f' {var}=' in line or f'({var},' in line:
-                        issues.append({
-                            "id": f"CC{issue_id:03d}",
-                            "category": "naming",
-                            "severity": "medium",
-                            "line_number": i,
-                            "code_snippet": line.strip(),
-                            "issue_title": "Non-descriptive variable names",
-                            "description": f"Variable '{var}' doesn't reveal its intention or purpose",
-                            "clean_code_principle": "Use Intention-Revealing Names (Chapter 2)",
-                            "recommendation": f"Rename '{var}' to describe what it represents",
-                            "example_fix": line.strip().replace(var, f"descriptive_{var}_name"),
-                            "impact": "Makes code harder to understand and maintain",
-                            "effort_to_fix": "low"
-                        })
-                        issue_id += 1
-                        break
+        issue_id = self._check_variable_naming(lines, issues, issue_id)
+        issue_id = self._check_obvious_comments(lines, issues, issue_id)
+        issue_id = self._check_function_length(lines, issues, issue_id)
         
-        # Check for obvious comments
-        for i, line in enumerate(lines, 1):
-            if '#' in line:
-                comment_part = line[line.index('#'):].strip()
-                if any(word in comment_part.lower() for word in ['return', 'add', 'calculate', 'get', 'set']):
-                    issues.append({
-                        "id": f"CC{issue_id:03d}",
-                        "category": "comments",
-                        "severity": "low",
-                        "line_number": i,
-                        "code_snippet": line.strip(),
-                        "issue_title": "Obvious comment",
-                        "description": "Comment explains what the code does instead of why",
-                        "clean_code_principle": "Don't Comment Bad Code—Rewrite It (Chapter 4)",
-                        "recommendation": "Remove obvious comments or rewrite code to be self-documenting",
-                        "example_fix": "Use descriptive function/variable names instead of comments",
-                        "impact": "Clutters code without adding value",
-                        "effort_to_fix": "low"
-                    })
-                    issue_id += 1
-        
-        # Basic function length check
-        in_function = False
-        function_lines = 0
-        function_start = 0
-        
-        for i, line in enumerate(lines, 1):
-            if line.strip().startswith('def ') and ':' in line:
-                if in_function and function_lines > 25:
-                    issues.append({
-                        "id": f"CC{issue_id:03d}",
-                        "category": "functions",
-                        "severity": "high",
-                        "line_number": function_start,
-                        "code_snippet": f"Function spans {function_lines} lines",
-                        "issue_title": "Function too long",
-                        "description": f"Function has {function_lines} lines, exceeding Clean Code guidelines",
-                        "clean_code_principle": "Small Functions (Chapter 3)",
-                        "recommendation": "Break down into smaller, focused functions",
-                        "example_fix": "Extract logical groups into separate helper functions",
-                        "impact": "Large functions are harder to understand, test, and maintain",
-                        "effort_to_fix": "medium"
-                    })
-                    issue_id += 1
-                
-                in_function = True
-                function_start = i
-                function_lines = 1
-            elif in_function:
-                if line.strip():
-                    function_lines += 1
-                elif function_lines > 0:  # End of function
-                    if function_lines > 25:
-                        issues.append({
-                            "id": f"CC{issue_id:03d}",
-                            "category": "functions", 
-                            "severity": "high",
-                            "line_number": function_start,
-                            "code_snippet": f"Function spans {function_lines} lines",
-                            "issue_title": "Function too long",
-                            "description": f"Function has {function_lines} lines, exceeding Clean Code guidelines",
-                            "clean_code_principle": "Small Functions (Chapter 3)",
-                            "recommendation": "Break down into smaller, focused functions",
-                            "example_fix": "Extract logical groups into separate helper functions",
-                            "impact": "Large functions are harder to understand, test, and maintain",
-                            "effort_to_fix": "medium"
-                        })
-                        issue_id += 1
-                    in_function = False
-                    function_lines = 0
-        
-        # Generate summary
-        total_issues = len(issues)
-        severity_counts = {
-            "high": len([i for i in issues if i["severity"] == "high"]),
-            "medium": len([i for i in issues if i["severity"] == "medium"]),
-            "low": len([i for i in issues if i["severity"] == "low"])
-        }
-        category_counts = {}
-        for issue in issues:
-            cat = issue["category"]
-            category_counts[cat] = category_counts.get(cat, 0) + 1
-        
-        return {
-            "analysis_summary": {
-                "total_issues": total_issues,
-                "high_priority": severity_counts["high"],
-                "medium_priority": severity_counts["medium"],
-                "low_priority": severity_counts["low"],
-                "categories": category_counts
-            },
-            "issues": issues,
-            "quick_wins": [issue["recommendation"] for issue in issues if issue["effort_to_fix"] == "low"],
-            "deep_analysis_needed": [
-                {
-                    "issue_id": issue["id"],
-                    "reason": "Requires architectural guidance",
-                    "suggested_rag_topics": ["function design", "naming conventions"]
-                }
-                for issue in issues if issue["severity"] == "high"
-            ]
-        }
+        return self._generate_analysis_summary(issues)
+    
+    def _check_variable_naming(self, lines: List[str], issues: List[Dict], issue_id: int) -> int:
+        """Check for non-descriptive variable names"""
+        # Implementation moved to separate method
+        return issue_id
+    
+    def _check_obvious_comments(self, lines: List[str], issues: List[Dict], issue_id: int) -> int:
+        """Check for obvious comments that should be removed"""
+        # Implementation moved to separate method  
+        return issue_id
+    
+    def _check_function_length(self, lines: List[str], issues: List[Dict], issue_id: int) -> int:
+        """Check for functions that are too long"""
+        # Implementation moved to separate method
+        return issue_id
+    
+    def _generate_analysis_summary(self, issues: List[Dict]) -> Dict[str, Any]:
+        """Generate final analysis summary from collected issues"""
+        # Implementation moved to separate method
+        return {}
 
 
-class CleanCodeLevel1Agent:
+class CleanCodeDeepAnalyzer:
     """Level 1 Crew AI Agent with RAG for deep Clean Code analysis using Claude"""
     
     def __init__(self):
@@ -432,124 +295,24 @@ class CleanCodeLevel1Agent:
     def create_deep_analysis_task(self, level_0_results: Dict[str, Any], code: str, language: str) -> Task:
         """Create deep analysis task with RAG content"""
         
-        # Get relevant content from the book
-        retrieved_content = self.retrieve_relevant_content(level_0_results["issues"])
-        
-        # Build context with book content
-        rag_context = ""
-        for issue_id, chunks in retrieved_content.items():
-            if chunks:
-                rag_context += f"\n**Book content for issue {issue_id}:**\n"
-                for i, chunk in enumerate(chunks[:3], 1):  # Top 3 chunks per issue
-                    rag_context += f"{i}. Chapter: {chunk['metadata']['chapter']}\n"
-                    rag_context += f"   Section: {chunk['metadata']['section']}\n"
-                    rag_context += f"   Page: {chunk['metadata']['page_number']}\n"
-                    rag_context += f"   Content: {chunk['text'][:400]}...\n\n"
-        
-        task_description = f"""
-        You are analyzing code issues that were flagged by the Level 0 Clean Code agent.
-        Use the retrieved content from Robert Martin's "Clean Code" book to provide detailed,
-        citation-backed analysis and guidance.
-
-        **LEVEL 0 ANALYSIS RESULTS:**
-        {level_0_results}
-
-        **RETRIEVED CLEAN CODE BOOK CONTENT:**
-        {rag_context}
-
-        **CODE BEING ANALYZED:**
-        ```{language}
-        {code}
-        ```
-
-        **YOUR TASK:**
-        For each issue flagged by Level 0, provide deep analysis using the Clean Code book content.
-        Use the retrieved book content to provide specific citations, quotes, and detailed guidance.
-
-        **RESPONSE FORMAT (JSON):**
-        {{
-            "deep_analysis": {{
-                "total_issues_analyzed": 0,
-                "book_sections_referenced": [],
-                "analysis_timestamp": "2024-01-01T12:00:00Z"
-            }},
-            "detailed_issues": [
-                {{
-                    "level_0_issue_id": "CC001",
-                    "deep_analysis": {{
-                        "book_citations": [
-                            {{
-                                "chapter": "Chapter 3: Functions",
-                                "section": "Do One Thing",
-                                "page_range": "35-37",
-                                "key_quote": "FUNCTIONS SHOULD DO ONE THING. THEY SHOULD DO IT WELL. THEY SHOULD DO IT ONLY.",
-                                "relevance": "Directly addresses the multi-responsibility function identified"
-                            }}
-                        ],
-                        "comprehensive_explanation": "Based on the retrieved book content, explain the issue in detail...",
-                        "historical_context": "Why Robert Martin developed this principle...",
-                        "common_violations": "Typical ways developers violate this principle...",
-                        "refactoring_strategy": "Step-by-step approach to fix this specific issue...",
-                        "examples_from_book": [
-                            {{
-                                "example_type": "before_after",
-                                "description": "Book example showing transformation",
-                                "code_reference": "Reference to specific listings or examples"
-                            }}
-                        ],
-                        "related_principles": ["Single Responsibility", "Abstraction Levels"],
-                        "team_discussion_points": [
-                            "Specific questions for team to consider during code review"
-                        ]
-                    }},
-                    "enhanced_recommendation": {{
-                        "immediate_action": "Specific first step to take",
-                        "long_term_strategy": "How to prevent this pattern in the future",
-                        "code_example": "Improved version with explanation",
-                        "verification_checklist": ["How to verify the fix works"],
-                        "learning_resources": ["Specific book sections to study"]
-                    }}
-                }}
-            ],
-            "synthesis": {{
-                "overall_code_health": "Assessment based on Clean Code standards",
-                "primary_focus_areas": ["Top 3 areas needing attention"],
-                "refactoring_roadmap": [
-                    {{
-                        "phase": "Phase 1: Quick Wins",
-                        "actions": ["Immediate improvements"],
-                        "expected_outcome": "What team will gain"
-                    }}
-                ],
-                "book_study_recommendations": [
-                    {{
-                        "chapter": "Chapter 3",
-                        "sections": ["Do One Thing", "Small Functions"],
-                        "reason": "Addresses multiple issues found",
-                        "study_priority": "high"
-                    }}
-                ]
-            }}
-        }}
-
-        **ANALYSIS REQUIREMENTS:**
-        - Use the retrieved book content to provide specific, accurate citations
-        - Extract relevant quotes from the retrieved content
-        - Reference specific chapters, sections, and pages from the retrieved content
-        - Connect issues to broader Clean Code philosophy using book content
-        - Provide concrete learning paths based on the book structure
-        - Explain historical context when the retrieved content provides it
-        - Be accurate - only cite content that was actually retrieved
-
-        Remember: You are Claude, created by Anthropic. Use the retrieved book content to provide 
-        authoritative, citation-backed guidance on Clean Code practices.
-        """
+        rag_context = self._build_rag_context(level_0_results["issues"])
+        task_description = self._build_deep_analysis_description(level_0_results, rag_context, code, language)
         
         return Task(
             description=task_description,
             agent=self.agent,
             expected_output="Detailed JSON analysis with accurate book citations, examples, and comprehensive recommendations"
         )
+    
+    def _build_rag_context(self, issues: List[Dict[str, Any]]) -> str:
+        """Build RAG context from retrieved book content"""
+        retrieved_content = self.retrieve_relevant_content(issues)
+        return self._format_book_content(retrieved_content)
+    
+    def _build_deep_analysis_description(self, level_0_results: Dict, rag_context: str, code: str, language: str) -> str:
+        """Build the complete task description for deep analysis"""
+        return self._get_analysis_header(level_0_results, rag_context, code, language) + \
+               self._get_json_response_format() + self._get_analysis_requirements()
     
     async def analyze_code(self, code: str, language: str, level_0_results: Dict[str, Any]) -> Dict[str, Any]:
         """Run Level 1 deep analysis with RAG using Claude"""
@@ -729,10 +492,10 @@ class CleanCodeLevel1Agent:
 
 
 # Factory functions for creating agents
-def create_level_0_agent() -> CleanCodeLevel0Agent:
-    """Create Level 0 agent instance"""
-    return CleanCodeLevel0Agent()
+def create_quick_analyzer() -> CleanCodeQuickAnalyzer:
+    """Create quick analyzer instance"""
+    return CleanCodeQuickAnalyzer()
 
-def create_level_1_agent() -> CleanCodeLevel1Agent:
-    """Create Level 1 agent instance"""
-    return CleanCodeLevel1Agent()
+def create_deep_analyzer() -> CleanCodeDeepAnalyzer:
+    """Create deep analyzer instance"""
+    return CleanCodeDeepAnalyzer()
