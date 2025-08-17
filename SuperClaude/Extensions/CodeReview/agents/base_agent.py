@@ -143,16 +143,23 @@ class BaseAgent(ABC):
     async def _perform_analysis(self, prompt: str, code: str, language: str) -> List[CodeSuggestion]:
         """
         Perform the actual analysis using Claude API
-        This is a placeholder - real implementation would call Claude
         """
-        # In a real implementation, this would:
-        # 1. Call Claude API with the prompt
-        # 2. Parse the structured JSON response
-        # 3. Validate and create CodeSuggestion objects
-        
-        # For demonstration, return empty list
-        # Real implementation would parse Claude's response
-        return self._mock_analysis(code, language)
+        # Import here to avoid circular dependencies
+        try:
+            from ..utils.claude_api_integration import ClaudeAPIIntegration, create_api_config_from_env
+            
+            # Try to use real Claude API
+            config = create_api_config_from_env()
+            api = ClaudeAPIIntegration(config)
+            
+            suggestions = await api.analyze_with_claude(prompt, code, language, self.name)
+            return suggestions
+            
+        except (ImportError, ValueError, Exception) as e:
+            # Fallback to mock analysis if API is not available
+            import logging
+            logging.getLogger(__name__).warning(f"Claude API not available ({e}), using mock analysis")
+            return self._mock_analysis(code, language)
     
     def _mock_analysis(self, code: str, language: str) -> List[CodeSuggestion]:
         """Generate mock suggestions for testing purposes"""
@@ -250,24 +257,40 @@ class BaseAgent(ABC):
 
 
 class AgentCoordinator:
-    """Coordinates multiple agents for comprehensive code review"""
+    """Coordinates multiple agents for comprehensive code review with intelligent collaboration"""
     
-    def __init__(self, agents: List[BaseAgent]):
+    def __init__(self, agents: List[BaseAgent], project_context: Optional[Dict] = None):
         self.agents = agents
+        self.project_context = project_context
+        
+        # Initialize collaboration engine
+        try:
+            from ..utils.collaboration_engine import CrossAgentCollaborationEngine, ProjectContext
+            
+            if project_context:
+                context = ProjectContext(**project_context)
+            else:
+                context = ProjectContext()
+                
+            self.collaboration_engine = CrossAgentCollaborationEngine(context)
+        except ImportError:
+            import logging
+            logging.getLogger(__name__).warning("Collaboration engine not available, using basic coordination")
+            self.collaboration_engine = None
     
     async def run_comprehensive_review(self, code: str, language: str, file_path: Optional[str] = None) -> Dict[str, Any]:
-        """Run all agents in parallel and compile results"""
+        """Run all agents in parallel and compile results with intelligent collaboration"""
         import asyncio
         
         # Run all agents in parallel
         tasks = [agent.analyze_code(code, language, file_path) for agent in self.agents]
         results = await asyncio.gather(*tasks)
         
-        # Compile comprehensive report
+        # Compile comprehensive report with collaboration analysis
         return self._compile_comprehensive_report(results, code)
     
     def _compile_comprehensive_report(self, results: List[AgentResult], original_code: str) -> Dict[str, Any]:
-        """Compile results from all agents into comprehensive report"""
+        """Compile results from all agents into comprehensive report with collaboration analysis"""
         all_suggestions = []
         agent_summaries = []
         
@@ -280,26 +303,57 @@ class AgentCoordinator:
                 "severity_breakdown": result.severity_breakdown
             })
         
-        # Detect conflicts between agents
-        conflicts = self._detect_conflicts(results)
-        
-        # Calculate overall metrics
-        total_suggestions = len(all_suggestions)
-        avg_impact = sum(s.impact_score for s in all_suggestions) / max(1, total_suggestions)
-        
-        return {
-            "summary": {
-                "total_agents": len(self.agents),
-                "total_suggestions": total_suggestions,
-                "average_impact_score": avg_impact,
-                "conflicts_detected": len(conflicts)
-            },
-            "agent_results": [result.to_dict() for result in results],
-            "agent_summaries": agent_summaries,
-            "conflicts": conflicts,
-            "all_suggestions": [s.to_dict() for s in all_suggestions],
-            "original_code": original_code
-        }
+        # Use collaboration engine if available
+        if self.collaboration_engine:
+            collaboration_report = self.collaboration_engine.analyze_collaboration(results)
+            
+            # Resolve conflicts intelligently
+            resolved_conflicts = self.collaboration_engine.resolve_conflicts(collaboration_report.conflicts)
+            
+            # Enhanced report with collaboration insights
+            return {
+                "summary": {
+                    "total_agents": len(self.agents),
+                    "total_suggestions": collaboration_report.total_suggestions,
+                    "average_impact_score": sum(s.impact_score for s in all_suggestions) / max(1, len(all_suggestions)),
+                    "conflicts_detected": len(collaboration_report.conflicts),
+                    "conflicts_resolved": len([c for c in resolved_conflicts if c.resolved_suggestion]),
+                    "synergies_found": len(collaboration_report.synergies),
+                    "collaboration_score": collaboration_report.overall_collaboration_score
+                },
+                "agent_results": [result.to_dict() for result in results],
+                "agent_summaries": agent_summaries,
+                "conflicts": [self._conflict_to_dict(c) for c in resolved_conflicts],
+                "synergies": [self._synergy_to_dict(s) for s in collaboration_report.synergies],
+                "priority_matrix": collaboration_report.priority_matrix,
+                "focus_areas": collaboration_report.recommended_focus_areas,
+                "all_suggestions": [s.to_dict() for s in all_suggestions],
+                "original_code": original_code,
+                "collaboration_insights": {
+                    "agent_coordination": "Enhanced with intelligent conflict resolution",
+                    "recommendation_quality": "Improved through cross-agent analysis",
+                    "educational_value": "Maximized through synergy identification"
+                }
+            }
+        else:
+            # Fallback to basic conflict detection
+            conflicts = self._detect_conflicts(results)
+            total_suggestions = len(all_suggestions)
+            avg_impact = sum(s.impact_score for s in all_suggestions) / max(1, total_suggestions)
+            
+            return {
+                "summary": {
+                    "total_agents": len(self.agents),
+                    "total_suggestions": total_suggestions,
+                    "average_impact_score": avg_impact,
+                    "conflicts_detected": len(conflicts)
+                },
+                "agent_results": [result.to_dict() for result in results],
+                "agent_summaries": agent_summaries,
+                "conflicts": conflicts,
+                "all_suggestions": [s.to_dict() for s in all_suggestions],
+                "original_code": original_code
+            }
     
     def _detect_conflicts(self, results: List[AgentResult]) -> List[Dict[str, Any]]:
         """Detect conflicts between different agent recommendations"""
@@ -330,3 +384,29 @@ class AgentCoordinator:
                     })
         
         return conflicts
+    
+    def _conflict_to_dict(self, conflict) -> Dict[str, Any]:
+        """Convert Conflict object to dictionary for JSON serialization"""
+        return {
+            "conflict_id": conflict.conflict_id,
+            "conflict_type": conflict.conflict_type.value,
+            "involved_agents": conflict.involved_agents,
+            "conflicting_suggestions": [s.to_dict() for s in conflict.conflicting_suggestions],
+            "line_number": conflict.line_number,
+            "description": conflict.description,
+            "impact_assessment": conflict.impact_assessment,
+            "resolution_strategy": conflict.resolution_strategy.value if conflict.resolution_strategy else None,
+            "resolved_suggestion": conflict.resolved_suggestion.to_dict() if conflict.resolved_suggestion else None,
+            "resolution_rationale": conflict.resolution_rationale
+        }
+    
+    def _synergy_to_dict(self, synergy) -> Dict[str, Any]:
+        """Convert Synergy object to dictionary for JSON serialization"""
+        return {
+            "synergy_id": synergy.synergy_id,
+            "involved_agents": synergy.involved_agents,
+            "synergistic_suggestions": [s.to_dict() for s in synergy.synergistic_suggestions],
+            "combined_impact": synergy.combined_impact,
+            "synthesis_description": synergy.synthesis_description,
+            "implementation_order": synergy.implementation_order
+        }

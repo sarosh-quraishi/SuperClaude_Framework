@@ -7,6 +7,22 @@ from .code_parser import CodeParser, CodeContext, LanguageDetector, SupportedLan
 from .output_formatter import OutputManager, InteractiveFormatter, ReportFormatter, JSONFormatter, ReviewSession
 from .interactive_diff_reviewer import InteractiveDiffReviewer, ReviewAction, ReviewDecision, DiffHunk
 
+# Import new critical enhancements
+try:
+    from .claude_api_integration import ClaudeAPIIntegration, APIConfig, APIMetrics, create_api_config_from_env
+    CLAUDE_API_AVAILABLE = True
+except ImportError:
+    CLAUDE_API_AVAILABLE = False
+
+try:
+    from .collaboration_engine import (
+        CrossAgentCollaborationEngine, ProjectContext, Conflict, Synergy, 
+        CollaborationReport, ConflictType, ResolutionStrategy
+    )
+    COLLABORATION_ENGINE_AVAILABLE = True
+except ImportError:
+    COLLABORATION_ENGINE_AVAILABLE = False
+
 __all__ = [
     'CodeParser',
     'CodeContext', 
@@ -22,3 +38,23 @@ __all__ = [
     'ReviewDecision', 
     'DiffHunk'
 ]
+
+# Add new modules to exports if available
+if CLAUDE_API_AVAILABLE:
+    __all__.extend([
+        'ClaudeAPIIntegration',
+        'APIConfig', 
+        'APIMetrics',
+        'create_api_config_from_env'
+    ])
+
+if COLLABORATION_ENGINE_AVAILABLE:
+    __all__.extend([
+        'CrossAgentCollaborationEngine',
+        'ProjectContext',
+        'Conflict',
+        'Synergy',
+        'CollaborationReport',
+        'ConflictType',
+        'ResolutionStrategy'
+    ])
