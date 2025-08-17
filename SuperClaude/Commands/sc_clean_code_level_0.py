@@ -10,7 +10,7 @@ import sys
 import json
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -18,7 +18,10 @@ sys.path.insert(0, str(project_root))
 
 from pipelines.clean_code_pipeline import CleanCodePipeline
 
-async def sc_clean_code_level_0(code_input: str, **kwargs) -> dict:
+# Constants
+JSON_INDENT_SPACES = 2
+
+async def sc_clean_code_level_0(code_input: str, **kwargs) -> Dict[str, Any]:
     """
     Execute Clean Code Level 0 analysis
     
@@ -32,13 +35,7 @@ async def sc_clean_code_level_0(code_input: str, **kwargs) -> dict:
     pipeline = CleanCodePipeline()
     
     # Determine if input is file path or code string
-    if Path(code_input).exists():
-        with open(code_input, 'r') as f:
-            code = f.read()
-        filename = code_input
-    else:
-        code = code_input
-        filename = None
+    code, filename = _parse_code_input(code_input)
     
     # Run only Level 0 analysis
     language = pipeline.detect_language(code, filename)
@@ -52,6 +49,50 @@ async def sc_clean_code_level_0(code_input: str, **kwargs) -> dict:
             "filename": filename
         }
     }
+
+def _parse_code_input(code_input: str) -> Tuple[str, Optional[str]]:
+    """Parse input to determine if it's a file path or code string.
+    
+    Args:
+        code_input: Input that could be a file path or code string
+        
+    Returns:
+        Tuple of (code_content, filename_or_none)
+    """
+    if Path(code_input).exists():
+        with open(code_input, 'r') as f:
+            code = f.read()
+        return code, code_input
+    else:
+        return code_input, None
+
+def _display_human_readable_output(results: Dict[str, Any]) -> None:
+    """Display analysis results in human-readable format.
+    
+    Args:
+        results: Analysis results to display
+    """
+    analysis = results["results"]
+    
+    print(f"🔍 Clean Code Level 0 Analysis")
+    print(f"Language: {results['metadata']['language']}")
+    print(f"Total Issues: {analysis['analysis_summary']['total_issues']}")
+    print(f"High Priority: {analysis['analysis_summary']['high_priority']}")
+    print(f"Medium Priority: {analysis['analysis_summary']['medium_priority']}")
+    print(f"Low Priority: {analysis['analysis_summary']['low_priority']}")
+    
+    if analysis['issues']:
+        print("\n📋 Issues Found:")
+        for issue in analysis['issues']:
+            print(f"  {issue['severity'].upper()}: {issue['issue_title']} (Line {issue['line_number']})")
+            print(f"    Principle: {issue['clean_code_principle']}")
+            print(f"    Fix: {issue['recommendation']}")
+            print()
+    
+    if analysis['quick_wins']:
+        print("🚀 Quick Wins:")
+        for win in analysis['quick_wins']:
+            print(f"  • {win}")
 
 def main():
     """CLI wrapper for the command"""
@@ -67,29 +108,9 @@ def main():
         results = asyncio.run(sc_clean_code_level_0(args.input))
         
         if args.json:
-            print(json.dumps(results, indent=2))
+            print(json.dumps(results, indent=JSON_INDENT_SPACES))
         else:
-            # Human-readable output
-            analysis = results["results"]
-            print(f"🔍 Clean Code Level 0 Analysis")
-            print(f"Language: {results['metadata']['language']}")
-            print(f"Total Issues: {analysis['analysis_summary']['total_issues']}")
-            print(f"High Priority: {analysis['analysis_summary']['high_priority']}")
-            print(f"Medium Priority: {analysis['analysis_summary']['medium_priority']}")
-            print(f"Low Priority: {analysis['analysis_summary']['low_priority']}")
-            
-            if analysis['issues']:
-                print("\n📋 Issues Found:")
-                for issue in analysis['issues']:
-                    print(f"  {issue['severity'].upper()}: {issue['issue_title']} (Line {issue['line_number']})")
-                    print(f"    Principle: {issue['clean_code_principle']}")
-                    print(f"    Fix: {issue['recommendation']}")
-                    print()
-            
-            if analysis['quick_wins']:
-                print("🚀 Quick Wins:")
-                for win in analysis['quick_wins']:
-                    print(f"  • {win}")
+            _display_human_readable_output(results)
                     
     except Exception as e:
         print(f"❌ Error: {e}")
