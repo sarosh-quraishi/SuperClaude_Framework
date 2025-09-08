@@ -6,6 +6,7 @@ import subprocess
 import sys
 from typing import Dict, List, Tuple, Optional, Any
 from pathlib import Path
+import shlex
 
 from ..core.base import Component
 from ..utils.ui import display_info, display_warning
@@ -181,11 +182,13 @@ class MCPComponent(Component):
 
             self.logger.debug(f"Running: {install_command}")
 
+
+            cmd_parts = shlex.split(install_command)
             result = subprocess.run(
-                install_command.split(),
+                cmd_parts,
                 capture_output=True,
                 text=True,
-                timeout=300,
+                timeout=900,   # 15 minutes
                 shell=(sys.platform == "win32")
             )
 
