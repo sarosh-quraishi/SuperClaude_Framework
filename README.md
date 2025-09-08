@@ -316,10 +316,6 @@ pip install --break-system-packages SuperClaude
 
 </td>
 <td valign="top">
-
-- ✨ [**Best Practices**](Docs/Reference/quick-start-practices.md)  
-  *Pro tips & patterns*
-
 - 📓 [**Examples Cookbook**](Docs/Reference/examples-cookbook.md)  
   *Real-world recipes*
 
