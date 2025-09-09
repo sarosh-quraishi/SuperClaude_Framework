@@ -52,7 +52,7 @@
 
 | **Commands** | **Agents** | **Modes** | **MCP Servers** |
 |:------------:|:----------:|:---------:|:---------------:|
-| **22** | **14** | **6** | **6** |
+| **23** | **14** | **6** | **6** |
 | Slash Commands | Specialized AI | Behavioral | Integrations |
 
 </div>
@@ -199,7 +199,7 @@ pip install --break-system-packages SuperClaude
 ### 📝 **Improved Namespace**
 **`/sc:` prefix** for all commands:
 - No conflicts with custom commands
-- 22 commands covering full lifecycle
+- 23 commands covering full lifecycle
 - From brainstorming to deployment
 - Clean, organized command structure
 
@@ -285,7 +285,7 @@ pip install --break-system-packages SuperClaude
 <td valign="top">
 
 - 🎯 [**Commands Reference**](Docs/User-Guide/commands.md)  
-  *All 22 slash commands*
+  *All 23 slash commands*
 
 - 🤖 [**Agents Guide**](Docs/User-Guide/agents.md)  
   *14 specialized agents*
