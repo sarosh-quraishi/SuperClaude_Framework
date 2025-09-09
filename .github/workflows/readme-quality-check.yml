@@ -292,13 +292,11 @@ jobs:
             const score = report.overall_score;
             const emoji = score >= 90 ? '🏆' : score >= 70 ? '✅' : '⚠️';
             
-            const comment = `${emoji} **README质量检查结果: ${score}/100**
-            
-📐 结构一致性: ${report.structure_consistency?.score || 0}/100
-🔗 链接有效性: ${report.link_validation?.score || 0}/100  
-🌍 翻译同步性: ${report.translation_sync?.score || 0}/100
-
-查看详细报告请点击 Actions 标签页。`;
+            const comment = `${emoji} **README质量检查结果: ${score}/100**\n\n` +
+              `📐 结构一致性: ${report.structure_consistency?.score || 0}/100\n` +
+              `🔗 链接有效性: ${report.link_validation?.score || 0}/100\n` +
+              `🌍 翻译同步性: ${report.translation_sync?.score || 0}/100\n\n` +
+              `查看详细报告请点击 Actions 标签页。`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
