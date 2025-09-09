@@ -9,6 +9,11 @@ on:
     branches: [main, master, develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   readme-quality-check:
     name: Multi-language README Quality Assessment
@@ -193,20 +198,29 @@ jobs:
                 self.results['overall_score'] = overall_score
                 
                 # 生成GitHub Actions摘要
-                summary = f"""## 📊 README质量检查报告
-
-### 🏆 总体评分: {overall_score}/100
-
-| 检查项目 | 分数 | 状态 | 详情 |
-|----------|------|------|------|
-| 📐 结构一致性 | {self.results['structure_consistency'].get('score', 0)}/100 | {self.results['structure_consistency'].get('status', 'N/A')} | {len(self.results['structure_consistency'].get('details', {}))} 个文件 |
-| 🔗 链接有效性 | {self.results['link_validation'].get('score', 0)}/100 | {self.results['link_validation'].get('status', 'N/A')} | {self.results['link_validation'].get('broken_links', 0)} 个损坏链接 |
-| 🌍 翻译同步性 | {self.results['translation_sync'].get('score', 0)}/100 | {self.results['translation_sync'].get('status', 'N/A')} | {self.results['translation_sync'].get('time_diff_days', 0)} 天差异 |
-
-### 📋 详细信息
-
-**结构一致性详情:**
-"""
+                pipe = "|"
+                table_header = f"{pipe} 检查项目 {pipe} 分数 {pipe} 状态 {pipe} 详情 {pipe}"
+                table_separator = f"{pipe}----------|------|------|------|"
+                table_row1 = f"{pipe} 📐 结构一致性 {pipe} {self.results['structure_consistency'].get('score', 0)}/100 {pipe} {self.results['structure_consistency'].get('status', 'N/A')} {pipe} {len(self.results['structure_consistency'].get('details', {}))} 个文件 {pipe}"
+                table_row2 = f"{pipe} 🔗 链接有效性 {pipe} {self.results['link_validation'].get('score', 0)}/100 {pipe} {self.results['link_validation'].get('status', 'N/A')} {pipe} {self.results['link_validation'].get('broken_links', 0)} 个损坏链接 {pipe}"
+                table_row3 = f"{pipe} 🌍 翻译同步性 {pipe} {self.results['translation_sync'].get('score', 0)}/100 {pipe} {self.results['translation_sync'].get('status', 'N/A')} {pipe} {self.results['translation_sync'].get('time_diff_days', 0)} 天差异 {pipe}"
+                
+                summary_parts = [
+                    "## 📊 README质量检查报告",
+                    "",
+                    f"### 🏆 总体评分: {overall_score}/100",
+                    "",
+                    table_header,
+                    table_separator,
+                    table_row1,
+                    table_row2,
+                    table_row3,
+                    "",
+                    "### 📋 详细信息",
+                    "",
+                    "**结构一致性详情:**"
+                ]
+                summary = "\n".join(summary_parts)
                 
                 for file, count in self.results['structure_consistency'].get('details', {}).items():
                     summary += f"\n- `{file}`: {count} 个标题"
@@ -271,7 +285,7 @@ jobs:
         retention-days: 30
         
     - name: Comment PR (if applicable)
-      if: github.event_name == 'pull_request' && always()
+      if: github.event_name == 'pull_request' && always() && github.event.pull_request.head.repo.full_name == github.repository
       uses: actions/github-script@v7
       with:
         script: |
@@ -283,13 +297,11 @@ jobs:
             const score = report.overall_score;
             const emoji = score >= 90 ? '🏆' : score >= 70 ? '✅' : '⚠️';
             
-            const comment = `${emoji} **README质量检查结果: ${score}/100**
-            
-📐 结构一致性: ${report.structure_consistency?.score || 0}/100
-🔗 链接有效性: ${report.link_validation?.score || 0}/100  
-🌍 翻译同步性: ${report.translation_sync?.score || 0}/100
-
-查看详细报告请点击 Actions 标签页。`;
+            const comment = `${emoji} **README质量检查结果: ${score}/100**\n\n` +
+              `📐 结构一致性: ${report.structure_consistency?.score || 0}/100\n` +
+              `🔗 链接有效性: ${report.link_validation?.score || 0}/100\n` +
+              `🌍 翻译同步性: ${report.translation_sync?.score || 0}/100\n\n` +
+              `查看详细报告请点击 Actions 标签页。`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
